@@ -368,7 +368,7 @@ int kernel( vector<vector<int> > clist, int t_l_k[][3], int g_succ[][10],int cor
                         tlist[a].push_back(clist[a][b]);
                     }
                 }
-                int current_core = core1[i];g
+                int current_core = core1[i];
                 for(int a=0; a<tlist[current_core].size(); a++){
                     if(tlist[current_core][a] == i){
                         index1 = a;
