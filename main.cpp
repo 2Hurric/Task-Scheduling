@@ -8,6 +8,170 @@
 #include <iomanip>
 using namespace std;
 
+void primary_assignment(int t_l_k[][3],int C[], int t_re, int n, int k);
+
+void task_prioritzing(int t_l_k[][3], int pri[], int pri_n[], 
+    int g_succ[][10], int w[], int C[], int t_re, int n, int k);
+
+void execution_unit_selection(int t_l_k[][3],int pri_n[], int g_succ[][10], 
+    int C[], int rt_l[], int rt_c[], int rt_ws[], int ft_ws[], int ft_wr[], 
+    int ft_l[], int ft[], int core[], int core1[], 
+    int n, int k, int t_s, int t_r, int t_c, vector<vector<int> > clist);
+
+int kernel( vector<vector<int> > clist, int t_l_k[][3], int g_succ[][10],
+    int core1[], int tmax, int t_total, float e_total, int n, int k, int st[], 
+    int et[], int E_c, int E_l[][3]);
+
+
+
+int main(int argc, char *argv[])
+{
+    int t_l_k[][3]={{9,7,5},
+                     {8,6,5},
+                     {6,5,4},
+                     {7,5,3},
+                     {5,4,2},
+                     {7,6,4},
+                     {8,5,3},
+                     {6,4,2},
+                     {5,3,2},
+                     {7,4,2}};
+    /*int t_l_k[][3]={{5,7,9},
+                     {5,6,8},
+                     {4,5,6},
+                     {3,5,7},
+                     {2,4,5},
+                     {4,6,7},
+                     {2,5,8},
+                     {2,4,6},
+                     {2,3,5},
+                     {2,4,7}};*/
+    //cout<<t_l_k[2][9];
+    int g_succ[][10]={{0,1,1,1,1,1,0,0,0,0},
+                    {0,0,0,0,0,0,0,1,1,0},
+                    {0,0,0,0,0,0,1,0,0,0},
+                    {0,0,0,0,0,0,0,1,1,0},
+                    {0,0,0,0,0,0,0,0,1,0},
+                    {0,0,0,0,0,0,0,1,0,0},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,0}}; //adjancy matrix
+    /*int g_succ[][10]={{0,1,1,1,1,1,0,0,0,0},
+                    {0,0,0,0,0,0,1,0,0,0},
+                    {0,0,0,0,0,0,1,0,0,0},
+                    {0,0,0,0,0,0,0,1,0,0},
+                    {0,0,0,0,0,0,0,0,1,0},
+                    {0,0,0,0,0,0,0,0,1,0},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,1},
+                    {0,0,0,0,0,0,0,0,0,0}};*/
+    int C[10]; //local:0, cloud:1
+    int pri[10], pri_n[10], w[10], core[4], core1[10];
+    int rt_l[10], rt_c[10], rt_ws[10], ft_ws[10], ft_wr[10], ft_l[10], ft[10];
+    vector<vector<int> > clist(4);
+    //list<int> c1, c2, c3, c0;
+    //int clist[4][10]
+    for(int i=0; i<10; i++){
+        C[i] = 0;
+        pri[i] = 0;
+        pri_n[i] = 0;
+        w[i] = 0;
+        rt_l[i] = 0;
+        rt_ws[i] = 0;
+        rt_c[i] = 0;
+        ft_ws[i] = 0;
+        ft_wr[i] = 0;
+        ft_l[i] = 0;
+        ft[i] = 0;
+        core1[i] = 0;
+    }
+    for(int i=0; i<4; i++){
+        core[i] = 0;
+    }
+    int k = 3, n = 10;
+    int t_s = 3, t_c = 1, t_r = 1;
+    int t_re = t_s + t_c + t_r;
+    int E_l[10][3];
+    int pk[] = {1,2,4};
+    float ps = 0.5;
+    float E_c = ps * t_s;
+    for(int i=0; i<10; i++){
+      for(int j=0; j<3; j++){
+          E_l[i][j] = pk[j] * t_l_k[i][j];
+      }
+    }
+    auto start = chrono::high_resolution_clock::now();
+    ios_base::sync_with_stdio(false);
+    primary_assignment(t_l_k,C,t_re,n,k);
+    task_prioritzing(t_l_k,pri,pri_n,g_succ,w,C,t_re,n,k);
+    /*for(int i=0; i<n; i++){
+        cout<<pri_n[i]<<endl;
+    }*/
+    execution_unit_selection(t_l_k,pri_n,g_succ,C,rt_l,rt_c,rt_ws,ft_ws,ft_wr,ft_l,ft,core,core1,n,k,t_s,t_r,t_c,clist);
+    /*for(int i=0; i<10; i++){
+        int rt = max(rt_ws[i],rt_l[i]);
+        cout<<rt<<" - "<<ft[i]<<endl;
+    }*/
+    for(int i=0; i<4; i++){
+        for(int j=0; j<10; j++){
+            if(core1[j] == i){
+                clist[i].push_back(j);
+            }
+        }
+    }
+    float e_total = 0;
+    for(int i=0; i<10; i++){
+        if(core1[i] == 3){
+            e_total += E_c;
+        }
+        else{
+            e_total += E_l[i][core1[i]];
+        }
+    }
+    int st[10];
+    for(int i=0; i<10; i++){
+        st[i] = max(rt_l[i],rt_ws[i]);
+        //cout<<st[i]<<endl;
+        //cout<<core1[i]<<" ";
+    }
+    /*for(int i=0; i<clist.size(); i++){
+        for(int j=0; j<clist[i].size(); j++){
+            cout<<clist[i][j]<<" ";
+        }
+        cout<<endl;
+    }*/
+    //cout<<e_total;
+    int tmin = ft[n-1];
+    int tmax = 27;
+    cout<<"Initial Scheduling (Format: Start Time - Task Number - Finish Time)"<<endl;
+    for(int i=0; i<clist.size(); i++){
+        if(i == 3){
+            cout<<"Cloud: ";
+        }
+        else{
+            cout<<"Core"<<i+1<<": ";
+        }
+        for(int j=0; j<clist[i].size(); j++){
+            cout<<st[clist[i][j]]<<"-Task"<<clist[i][j]+1<<"-"<<ft[clist[i][j]]<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<"Initial Energy Consumption: "<<e_total<<"   Initial Completion Time: "<<tmin<<endl;
+    cout<<endl;
+    kernel(clist,t_l_k,g_succ,core1,tmax,tmin,e_total,10,3,st,ft,E_c,E_l);
+    /*for(int i=0; i<10; i++){
+        cout<<core1[i]<<" ";
+    }*/
+    auto end = chrono::high_resolution_clock::now();
+    double time_taken = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+    time_taken *= 1e-9;
+    cout << endl << "Time taken by program is : " << fixed << time_taken << setprecision(9);
+    cout << " sec" << endl;
+    return 0;
+}
+
 void primary_assignment(int t_l_k[][3],int C[], int t_re, int n, int k){
     int t_l_min[n];
     for(int i=0; i<n; i++){
@@ -58,7 +222,7 @@ void task_prioritzing(int t_l_k[][3], int pri[], int pri_n[], int g_succ[][10], 
         pri[i] = w[i] + max_j;
     }
     //caculate priority
-    vector<pair<int,int>> vect;
+    vector<pair<int,int> > vect;
     for (int i=0; i<n; i++){
         vect.push_back(make_pair(pri[i],i));
     }
@@ -69,7 +233,7 @@ void task_prioritzing(int t_l_k[][3], int pri[], int pri_n[], int g_succ[][10], 
     //sort according to priority
 }
 
-void execution_unit_selection(int t_l_k[][3],int pri_n[], int g_succ[][10], int C[], int rt_l[], int rt_c[], int rt_ws[], int ft_ws[], int ft_wr[], int ft_l[], int ft[], int core[], int core1[], int n, int k, int t_s, int t_r, int t_c, vector<vector<int>> clist){
+void execution_unit_selection(int t_l_k[][3],int pri_n[], int g_succ[][10], int C[], int rt_l[], int rt_c[], int rt_ws[], int ft_ws[], int ft_wr[], int ft_l[], int ft[], int core[], int core1[], int n, int k, int t_s, int t_r, int t_c, vector<vector<int> > clist){
     int f_i = pri_n[n-1];//schedule first element
     rt_l[f_i] = 0;
     rt_ws[f_i] = 0;
@@ -175,7 +339,7 @@ void execution_unit_selection(int t_l_k[][3],int pri_n[], int g_succ[][10], int 
     }
 }
 
-int kernel( vector<vector<int>> clist, int t_l_k[][3], int g_succ[][10],int core1[], int tmax, int t_total, float e_total, int n, int k, int st[], int et[], int E_c, int E_l[][3]){
+int kernel( vector<vector<int> > clist, int t_l_k[][3], int g_succ[][10],int core1[], int tmax, int t_total, float e_total, int n, int k, int st[], int et[], int E_c, int E_l[][3]){
     int out = 0;
     int count = 0;
     while(out == 0){
@@ -187,7 +351,7 @@ int kernel( vector<vector<int>> clist, int t_l_k[][3], int g_succ[][10],int core
         for(int i=0; i<n; i++){
             for(int j=0; j<k+1; j++){
                 int core2[10], core3[4], rt[10], rt1[10], ft[10], ft1[10], pushed[10];
-                vector<vector<int>> tlist(4);
+                vector<vector<int> > tlist(4);
                 int index1, index2 = 0;
                 for(int i=0; i<10; i++){
                     rt[i] = 0;
@@ -510,151 +674,3 @@ int kernel( vector<vector<int>> clist, int t_l_k[][3], int g_succ[][10],int core
     }
 }
 
-
-int main(int argc, char *argv[])
-{
-    int t_l_k[][3]={{9,7,5},
-                     {8,6,5},
-                     {6,5,4},
-                     {7,5,3},
-                     {5,4,2},
-                     {7,6,4},
-                     {8,5,3},
-                     {6,4,2},
-                     {5,3,2},
-                     {7,4,2}};
-    /*int t_l_k[][3]={{5,7,9},
-                     {5,6,8},
-                     {4,5,6},
-                     {3,5,7},
-                     {2,4,5},
-                     {4,6,7},
-                     {2,5,8},
-                     {2,4,6},
-                     {2,3,5},
-                     {2,4,7}};*/
-    //cout<<t_l_k[2][9];
-    int g_succ[][10]={{0,1,1,1,1,1,0,0,0,0},
-                    {0,0,0,0,0,0,0,1,1,0},
-                    {0,0,0,0,0,0,1,0,0,0},
-                    {0,0,0,0,0,0,0,1,1,0},
-                    {0,0,0,0,0,0,0,0,1,0},
-                    {0,0,0,0,0,0,0,1,0,0},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,0}}; //adjancy matrix
-    /*int g_succ[][10]={{0,1,1,1,1,1,0,0,0,0},
-                    {0,0,0,0,0,0,1,0,0,0},
-                    {0,0,0,0,0,0,1,0,0,0},
-                    {0,0,0,0,0,0,0,1,0,0},
-                    {0,0,0,0,0,0,0,0,1,0},
-                    {0,0,0,0,0,0,0,0,1,0},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,1},
-                    {0,0,0,0,0,0,0,0,0,0}};*/
-    int C[10]; //local:0, cloud:1
-    int pri[10], pri_n[10], w[10], core[4], core1[10];
-    int rt_l[10], rt_c[10], rt_ws[10], ft_ws[10], ft_wr[10], ft_l[10], ft[10];
-    vector<vector<int>> clist(4);
-    //list<int> c1, c2, c3, c0;
-    //int clist[4][10]
-    for(int i=0; i<10; i++){
-        C[i] = 0;
-        pri[i] = 0;
-        pri_n[i] = 0;
-        w[i] = 0;
-        rt_l[i] = 0;
-        rt_ws[i] = 0;
-        rt_c[i] = 0;
-        ft_ws[i] = 0;
-        ft_wr[i] = 0;
-        ft_l[i] = 0;
-        ft[i] = 0;
-        core1[i] = 0;
-    }
-    for(int i=0; i<4; i++){
-        core[i] = 0;
-    }
-    int k = 3, n = 10;
-    int t_s = 3, t_c = 1, t_r = 1;
-    int t_re = t_s + t_c + t_r;
-    int E_l[10][3];
-    int pk[] = {1,2,4};
-    float ps = 0.5;
-    float E_c = ps * t_s;
-    for(int i=0; i<10; i++){
-      for(int j=0; j<3; j++){
-          E_l[i][j] = pk[j] * t_l_k[i][j];
-      }
-    }
-    auto start = chrono::high_resolution_clock::now();
-    ios_base::sync_with_stdio(false);
-    primary_assignment(t_l_k,C,t_re,n,k);
-    task_prioritzing(t_l_k,pri,pri_n,g_succ,w,C,t_re,n,k);
-    /*for(int i=0; i<n; i++){
-        cout<<pri_n[i]<<endl;
-    }*/
-    execution_unit_selection(t_l_k,pri_n,g_succ,C,rt_l,rt_c,rt_ws,ft_ws,ft_wr,ft_l,ft,core,core1,n,k,t_s,t_r,t_c,clist);
-    /*for(int i=0; i<10; i++){
-        int rt = max(rt_ws[i],rt_l[i]);
-        cout<<rt<<" - "<<ft[i]<<endl;
-    }*/
-    for(int i=0; i<4; i++){
-        for(int j=0; j<10; j++){
-            if(core1[j] == i){
-                clist[i].push_back(j);
-            }
-        }
-    }
-    float e_total = 0;
-    for(int i=0; i<10; i++){
-        if(core1[i] == 3){
-            e_total += E_c;
-        }
-        else{
-            e_total += E_l[i][core1[i]];
-        }
-    }
-    int st[10];
-    for(int i=0; i<10; i++){
-        st[i] = max(rt_l[i],rt_ws[i]);
-        //cout<<st[i]<<endl;
-        //cout<<core1[i]<<" ";
-    }
-    /*for(int i=0; i<clist.size(); i++){
-        for(int j=0; j<clist[i].size(); j++){
-            cout<<clist[i][j]<<" ";
-        }
-        cout<<endl;
-    }*/
-    //cout<<e_total;
-    int tmin = ft[n-1];
-    int tmax = 27;
-    cout<<"Initial Scheduling (Format: Start Time - Task Number - Finish Time)"<<endl;
-    for(int i=0; i<clist.size(); i++){
-        if(i == 3){
-            cout<<"Cloud: ";
-        }
-        else{
-            cout<<"Core"<<i+1<<": ";
-        }
-        for(int j=0; j<clist[i].size(); j++){
-            cout<<st[clist[i][j]]<<"-Task"<<clist[i][j]+1<<"-"<<ft[clist[i][j]]<<" ";
-        }
-        cout<<endl;
-    }
-    cout<<"Initial Energy Consumption: "<<e_total<<"   Initial Completion Time: "<<tmin<<endl;
-    cout<<endl;
-    kernel(clist,t_l_k,g_succ,core1,tmax,tmin,e_total,10,3,st,ft,E_c,E_l);
-    /*for(int i=0; i<10; i++){
-        cout<<core1[i]<<" ";
-    }*/
-    auto end = chrono::high_resolution_clock::now();
-    double time_taken = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
-    time_taken *= 1e-9;
-    cout << endl << "Time taken by program is : " << fixed << time_taken << setprecision(9);
-    cout << " sec" << endl;
-    return 0;
-}
